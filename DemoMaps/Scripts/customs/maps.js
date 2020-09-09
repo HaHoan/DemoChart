@@ -1,10 +1,11 @@
-﻿var seriesOptions = []
-success();
+﻿$(function () {
+    getData();
+});
 /**
  * Create the chart when all data is loaded
  * @returns {undefined}
  */
-function createChart() {
+function createChart(seriesOptions) {
 
     Highcharts.stockChart('container', {
 
@@ -42,18 +43,28 @@ function createChart() {
     });
 }
 
-function success() {
-    var maps_vn = $('#maps_vn').val();
-    var maps_tg = $('#maps_tg').val();
-    var obj = JSON.parse(maps_vn);
-    seriesOptions[0] = {
-        name: "VN",
-        data: obj
-    };
-    var obj = JSON.parse(maps_tg);
-    seriesOptions[1] = {
-        name: "TG",
-        data: obj
-    };
-    createChart();
+function getData() {
+    $('.loading').show();
+    $.ajax({
+        url: "/Home/GetData",
+        success: function (response) {
+            var seriesOptions = [];
+            var obj = JSON.parse(response.VN);
+            seriesOptions[0] = {
+                name: "VN",
+                data: obj
+            };
+            obj = JSON.parse(response.TG);
+            seriesOptions[1] = {
+                name: "TG",
+                data: obj
+            };
+            createChart(seriesOptions);
+            $('.loading').hide();
+        },
+        error: function (e) {
+            alert(e);
+        }
+    });
+  
 }

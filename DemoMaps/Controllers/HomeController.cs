@@ -1,92 +1,97 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Data;
-using System.IO;
 using System.Linq;
-using System.Web;
 using System.Web.Mvc;
-using ExcelDataReader;
-using Newtonsoft.Json;
 namespace DemoMaps.Controllers
 {
     public class HomeController : Controller
     {
-        
+
         public ActionResult Index()
         {
-           Tuple<string, string> json = readingFromExcel(@"C:\Users\adminlocal\Desktop\anh quyet\8.9\haon.xlsx");
-            ViewBag.MapsVN = json.Item1;
-            ViewBag.MapsTG = json.Item2;
             return View();
         }
-        public Tuple<string, string> readingFromExcel(string path)
+
+        public JsonResult GetData()
         {
-            IExcelDataReader excelReader2007 = null;
+            Tuple<string, string> json = Utils.readingFormDb();
+            return Json(new
+            {
+                VN = json.Item1,
+                TG = json.Item2
+            },
+                   JsonRequestBehavior.AllowGet);
+
+        }
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult Add(Purchase_price p)
+        {
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    using (TestEntities db = new TestEntities())
+                    {
+                        double dateTicks = p.DATE_DETAIL.ToUniversalTime().Subtract(
+    new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+    ).TotalMilliseconds;
+                        string ID = dateTicks.ToString();
+                        Purchase_price p_Db = db.Purchase_price.Where(m => m.ID == ID).FirstOrDefault();
+                        if(p_Db != null && p.VN == p_Db.VN && p.TG == p_Db.TG)
+                        {
+                            return RedirectToAction("Index");
+                        }
+                        if (p_Db != null)
+                        {
+                            p_Db.VN = p.VN;
+                            p_Db.TG = p.TG;
+                        }
+                        else
+                        {
+                            p.ID = ID;
+                            db.Purchase_price.Add(p);
+                        }
+                        db.SaveChanges();
+                        return RedirectToAction("Index");
+                    }
+                }
+                catch (Exception e)
+                {
+                    return View("Index");
+                }
+            }
+            return View("Index");
+        }
+        public JsonResult ChangeSelectedDate(DateTime date)
+        {
+            string VN = "";
+            string TG = "";
             try
             {
-                FileStream stream = new FileStream(path, FileMode.Open);
-                excelReader2007 = ExcelReaderFactory.CreateOpenXmlReader(stream);
-
-                DataSet result = excelReader2007.AsDataSet();
-                
-                DataTable table = result.Tables[0];
-                List<List<object>> listVN = new List<List<object>>();
-                List<List<object>> listTG = new List<List<object>>();
-                for (int i = 2; i < table.Rows.Count; i++)
+                using (TestEntities db = new TestEntities())
                 {
-                    string ID = table.Rows[i].ItemArray[0].ToString();
-                    string VN = table.Rows[i].ItemArray[1].ToString();
-                    string TG = table.Rows[i].ItemArray[2].ToString();
-                    List<object> itemsVN = new List<object>();
-                    List<object> itemsTG = new List<object>();
-                    try
+                    string dateTicks = date.ToUniversalTime().Subtract(
+   new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+   ).TotalMilliseconds.ToString();
+                    Purchase_price p = db.Purchase_price.Where(m => m.ID == dateTicks).FirstOrDefault();
+                    if (p != null)
                     {
-                        itemsVN.Add(Convert.ToInt64(ID));
-                        itemsTG.Add(Convert.ToInt64(ID));
+                        VN = p.VN.ToString();
+                        TG = p.TG.ToString();
                     }
-                    catch(Exception e)  {
-                        Console.WriteLine(e);
-                    }
-                    try
-                    {
-                        itemsVN.Add(float.Parse(VN));
-                    }
-                    catch { }
-                    try
-                    {
-                        itemsTG.Add(float.Parse(TG));
-                    }
-                    catch { }
-                    
-                    listVN.Add(itemsVN);
-                    listTG.Add(itemsTG);
                 }
 
-                string jsonVN = JsonConvert.SerializeObject(listVN);
-                string jsonTG = JsonConvert.SerializeObject(listTG);
-              
-                excelReader2007.Close();
-                return Tuple.Create<string, string>(jsonVN, jsonTG);
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                Console.Write(e.ToString());
+
             }
-            return null;
-            
-        }
-        public ActionResult About()
-        {
-            ViewBag.Message = "Your application description page.";
-
-            return View();
-        }
-
-        public ActionResult Contact()
-        {
-            ViewBag.Message = "Your contact page.";
-
-            return View();
+            return Json(new
+            {
+                VN = VN,
+                TG = TG
+            },
+                   JsonRequestBehavior.AllowGet);
         }
     }
 }

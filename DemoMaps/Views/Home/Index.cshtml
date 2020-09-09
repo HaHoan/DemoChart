@@ -1,7 +1,47 @@
 ﻿@{
     ViewBag.Title = "Home Page";
 }
-<input id="maps_vn" type="hidden" value="@ViewBag.MapsVN"/>
-<input id="maps_tg" type="hidden" value="@ViewBag.MapsTG"/>
+@model Purchase_price
 
-<div id="container" style="height: 800px; min-width: 310px"></div>
+<div id="container" style="height: 800px; min-width: 310px;"></div>
+<a class="float bg-primary" data-toggle="modal" data-target="#addNew">
+    <i class="fas fa-plus float-icon"></i>
+</a>
+<!-- Modal -->
+<div class="modal right fade" id="addNew" tabindex="-1" role="dialog" aria-labelledby="addNewLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content right">
+            <div class="modal-header">
+                <h5 class="modal-title inline" id="addNewLabel">Thêm mới</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            @using (Html.BeginForm("Add", "Home", FormMethod.Post))
+            {
+                <div class="modal-body">
+                    @Html.AntiForgeryToken()
+                    @Html.LabelFor(m => m.DATE_DETAIL)
+                    @Html.TextBoxFor(m => m.DATE_DETAIL, new { @type = "date", @Value = DateTime.Now.ToString("yyyy-MM-dd"), @class = "form-control" })
+                    @Html.ValidationMessage("DATE_DETAIL", "", new { @class = "text-danger" })
+                    <br />
+                    @Html.LabelFor(m => m.VN)
+                    @Html.TextBoxFor(m => m.VN, new { @type = "text", @class = "form-control" })
+                    @Html.ValidationMessage("VN", "", new { @class = "text-danger" })
+                    <br />
+                    @Html.LabelFor(m => m.TG)
+                    @Html.TextBoxFor(m => m.TG, new { @type = "text", @class = "form-control" })
+                    @Html.ValidationMessage("TG", "", new { @class = "text-danger" })
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section scripts{
+    @Scripts.Render("~/bundles/jqueryval")
+    @Scripts.Render("~/Scripts/customs/common.js")
+}
